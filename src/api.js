@@ -13,7 +13,7 @@ export async function api(path, { method = 'GET', body } = {}) {
     localStorage.removeItem('token')
     window.location.reload()
   }
-  if (!res.ok) throw new Error(data.message || 'Something went wrong')
+  if (!res.ok) throw Object.assign(new Error(data.message || 'Something went wrong'), { status: res.status, data })
   return data
 }
 

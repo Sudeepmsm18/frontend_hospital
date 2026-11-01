@@ -205,12 +205,16 @@ function UserManagement({ role, user }) {
   const shown = (users || []).filter((u) => [u.name, u.email, u.phone, u.specialization].join(' ').toLowerCase().includes(q.toLowerCase()))
 
   const remove = async (u) => {
-    if (!confirm(`Delete ${u.name}?`)) return
+    if (!confirm(`Delete ${u.name}? This can't be undone.`)) return
     try {
       await api(`/users/${u._id}`, { method: 'DELETE' })
       reload()
     } catch (err) {
-      alert(err.message)
+      // 409 = they still have upcoming appointments; offer to cancel those too.
+      if (err.status !== 409) return alert(err.message)
+      if (!confirm(`${u.name} has ${err.data.booked} upcoming appointment(s). Cancel them and delete ${u.name}?`)) return
+      await api(`/users/${u._id}?force=1`, { method: 'DELETE' }).catch((e) => alert(e.message))
+      reload()
     }
   }
 
@@ -232,7 +236,7 @@ function UserManagement({ role, user }) {
               <tr>
                 <th>Name</th><th>Email</th><th>Mobile</th>
                 {role === 'doctor' && <><th>Specialization</th><th>Hours</th><th>Status</th></>}
-                {role === 'patient' && <><th>Age</th><th>Gender</th></>}
+                {role === 'patient' && <><th>Age</th><th>Gender</th><th>Registered</th></>}
                 <th></th>
               </tr>
             </thead>
@@ -248,7 +252,16 @@ function UserManagement({ role, user }) {
                   <td>{u.email}</td>
                   <td>{u.phone || '—'}</td>
                   {role === 'doctor' && <><td>{u.specialization || '—'}</td><td>{u.startTime}–{u.endTime}<div className="muted">{u.slotMinutes} min slots</div></td><td><span className={`badge ${u.status}`}>{u.status}</span></td></>}
-                  {role === 'patient' && <><td>{u.age || '—'}</td><td>{u.gender || '—'}</td></>}
+                  {role === 'patient' && (
+                    <>
+                      <td>{u.age || '—'}</td>
+                      <td>{u.gender || '—'}</td>
+                      <td>
+                        {new Date(u.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        <div><span className="badge">{u.email.endsWith('@walkin.carepoint') ? 'walk-in' : 'self sign-up'}</span></div>
+                      </td>
+                    </>
+                  )}
                   <td className="actions">
                     <button className="sm" onClick={() => setEditing(u)}>Edit</button>
                     {u._id !== user._id && <button className="sm danger" onClick={() => remove(u)}>Delete</button>}
@@ -294,8 +307,8 @@ function UserForm({ role, existing, onClose, onSaved }) {
         </div>
         <div className="row">
           <label>Email (login)<input type="email" value={form.email} onChange={set('email')} required /></label>
-          <label>{existing ? 'New password (blank = keep)' : 'Password (default password123)'}
-            <input type="text" value={form.password} onChange={set('password')} minLength={6} />
+          <label>{existing ? 'New password (blank = keep)' : 'Password'}
+            <input type="text" value={form.password} onChange={set('password')} minLength={6} required={!existing} />
           </label>
         </div>
         {role === 'doctor' && (

@@ -144,7 +144,7 @@ function WalkInBooking({ doctors, onBooked }) {
               </select>
             </label>
           </div>
-          <p className="muted">They can log in later with &lt;mobile digits&gt;@walkin.carepoint and password <code>password123</code>.</p>
+          <p className="muted">They can log in later with &lt;mobile digits&gt;@walkin.carepoint, using their mobile number as the password.</p>
         </>
       ) : (
         <label>Patient
