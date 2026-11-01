@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 // Locally Vite proxies /api to the backend. A deployed frontend sets VITE_API_URL to the backend's URL,
 // e.g. https://carepoint-api.onrender.com
-const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+const BASE = (import.meta.env?.VITE_API_URL || '').replace(/\/+$/, '')
 
 export async function api(path, { method = 'GET', body } = {}) {
   const token = localStorage.getItem('token')
@@ -11,7 +11,9 @@ export async function api(path, { method = 'GET', body } = {}) {
     headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
     body: body && JSON.stringify(body),
   })
-  if (res.status === 502 || res.status === 504) throw new Error('Cannot reach the server. Is the backend running (cd backend && npm run dev)?')
+  if (res.status === 502 || res.status === 504) {
+    throw new Error(BASE ? 'Cannot reach the server. It may be waking up, please try again in a minute.' : 'Cannot reach the server. Is the backend running (cd backend && npm run dev)?')
+  }
   const data = await res.json().catch(() => ({}))
   if (res.status === 401 && token) {
     localStorage.removeItem('token')
