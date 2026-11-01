@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 
+// Locally Vite proxies /api to the backend. A deployed frontend sets VITE_API_URL to the backend's URL,
+// e.g. https://carepoint-api.onrender.com
+const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+
 export async function api(path, { method = 'GET', body } = {}) {
   const token = localStorage.getItem('token')
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${BASE}/api${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
     body: body && JSON.stringify(body),
